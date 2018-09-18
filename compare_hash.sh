@@ -1,0 +1,69 @@
+#!/bin/bash
+
+#Compare the file hash of a file against a provided hash
+PROGNAME=$(basename $0)
+
+usage () {
+  echo "$PROGNAME: Usage $PROGNAME -a  <hash-algorithm> -h <provided-hash> -f <path to file>
+  e.g. $PROGNAME -a md5 hsvnwery23094u0ruhfkldfsnl sample.txt
+  -a | --algorithm  Hash algorithm being used (md5, sha1, sha256, sha512)
+  -h | --hash       The provided hash used to verify file authenticity
+  -f | --file       The file to be hashed and compared to the provided hash value (including path)"
+  return
+}
+
+algorithm=
+provided_hash=
+filename=
+
+while [[ -n $1 ]]; do
+    case $1 in
+      -a | --algorithm)   shift
+                          algorithm=$( echo $1 | tr '[:upper:]' '[:lower:]' )
+                          ;;
+      -h | --hash)        shift
+                          provided_hash=$( echo $1 | tr '[:upper:]' '[:lower:]' )
+                          ;;
+      -f | --file)        shift
+                          filename=$1
+                          ;;
+      -h | --help)        usage
+                          exit
+                          ;;
+      *)                  usage >&2
+                          exit 1
+                          ;;
+    esac
+    shift
+done
+if [[ -n $algorithm ]]; then
+  case $algorithm in
+    md5 | md5sum)               algorithm=md5sum
+                                ;;
+    sha1 | sha1sum)             algorithm=sha1sum
+                                ;;
+    sha256 | sha256sum)         algorithm=sha256sum
+                                ;;
+    sha512 | sha512sum)         algorithm=sha512sum
+                                ;;
+    *)                          echo "Not a valid algorithm."
+                                exit 1
+                                ;;
+  esac
+  if [[ ! -e $filename ]]; then
+    echo "File does not exist."
+    exit 1
+  fi
+  file_hash=$( $algorithm $filename | cut -d' ' -f1 )
+  echo "algorithm is $algorithm"
+  echo "provided_hash is $provided_hash"
+  echo "filename is $filename"
+  echo "File hash is $file_hash"
+  if [[ $provided_hash == $file_hash ]]; then
+    echo "The file hashes match!"
+  else
+    echo "The file hashes do not match :( "
+  fi
+else
+  usage
+fi
